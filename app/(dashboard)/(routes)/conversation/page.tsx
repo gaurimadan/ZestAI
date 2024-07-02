@@ -1,6 +1,5 @@
-
 "use client";
-import { Heading } from "@/components/Heading"
+
 import { useForm } from "react-hook-form"
 import * as z from "zod";
 import { formSchema } from "./constants";
@@ -8,8 +7,15 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import {Form,FormControl, FormField, FormItem} from "@/components/ui/form";
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import axios from "axios";
+import ChatCompletionRequestMessage from "openai";
+
 
 const ConversationPage =() =>{
+    const router = useRouter();
+    const [messages, setMessages]=useState<ChatCompletionRequestMessage[]>([]);
 
     const form=useForm<z.infer<typeof formSchema>>({
        resolver:zodResolver(formSchema),
@@ -21,7 +27,23 @@ const ConversationPage =() =>{
 
     const isloading=form.formState.isSubmitting;
     const onSubmit=async(values:z.infer<typeof formSchema>) =>{
-        console.log(values);
+       
+        try{
+            const userMessage:ChatCompletionRequestMessage={
+                role :"user",
+                content:values.prompt,
+            };
+            const newMessage =[...messages,userMessage];
+            const response = await axios.post("api/conversation",{messages:newMessage,});
+            setMessages((current) => [...current,userMessage,response.data]);
+
+        }
+        catch(error:any){
+            console.log(error);
+        }
+        finally{
+                router.refresh();
+        }
     };
     return(
         <div className="px-4 lg:px-8">
@@ -61,6 +83,15 @@ const ConversationPage =() =>{
                         </Button>
                 </form>
             </Form>
+        </div>
+        <div className="space-y-4 mt-4">
+           <div className="flex flex-col-reverse gap-y-4">
+            {messages.map((message)=>(
+                <div key={message.content}>
+                    {message.content}
+                    </div>
+            ))}
+            </div>
         </div>
         </div>
     )
