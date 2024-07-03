@@ -10,9 +10,10 @@ import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import axios from "axios";
-import ChatCompletionRequestMessage from "openai";
+import { Empty } from "@/components/Empty";
 
 
+type ChatCompletionRequestMessage={content:string,role:string}
 const ConversationPage =() =>{
     const router = useRouter();
     const [messages, setMessages]=useState<ChatCompletionRequestMessage[]>([]);
@@ -32,7 +33,7 @@ const ConversationPage =() =>{
             const userMessage:ChatCompletionRequestMessage={
                 role :"user",
                 content:values.prompt,
-            };
+            }as any;
             const newMessage =[...messages,userMessage];
             const response = await axios.post("api/conversation",{messages:newMessage,});
             setMessages((current) => [...current,userMessage,response.data]);
@@ -85,6 +86,11 @@ const ConversationPage =() =>{
             </Form>
         </div>
         <div className="space-y-4 mt-4">
+            {messages.length===0 && !isloading && (
+                <div>
+                    <Empty label="No conversation started"/>
+                    </div>
+            )}
            <div className="flex flex-col-reverse gap-y-4">
             {messages.map((message)=>(
                 <div key={message.content}>
