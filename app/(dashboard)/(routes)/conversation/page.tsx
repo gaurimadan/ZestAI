@@ -16,7 +16,6 @@ import { cn } from "@/lib/utils";
 import { UserAvatar } from "@/components/user-avatar";
 import { BotAvatar } from "@/components/bot-avatar";
 
-
 type ChatCompletionRequestMessage={content:string,role:string}
 const ConversationPage =() =>{
     const router = useRouter();
@@ -30,6 +29,9 @@ const ConversationPage =() =>{
         }
     });
 
+
+
+    console.log(process.env.NEXT_PUBLIC_OPENAI_API_KEY)
     const isloading=form.formState.isSubmitting;
     const onSubmit=async(values:z.infer<typeof formSchema>) =>{
        
