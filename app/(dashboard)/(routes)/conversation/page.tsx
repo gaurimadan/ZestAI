@@ -11,6 +11,10 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import axios from "axios";
 import { Empty } from "@/components/Empty";
+import { Loader } from "@/components/Loader";
+import { cn } from "@/lib/utils";
+import { UserAvatar } from "@/components/user-avatar";
+import { BotAvatar } from "@/components/bot-avatar";
 
 
 type ChatCompletionRequestMessage={content:string,role:string}
@@ -86,6 +90,12 @@ const ConversationPage =() =>{
             </Form>
         </div>
         <div className="space-y-4 mt-4">
+            {isloading && (
+                <div className="p-8 rounded-lg w-full items-center justify-center bg-muted">
+                    <Loader/>
+                    </div>
+
+            )}
             {messages.length===0 && !isloading && (
                 <div>
                     <Empty label="No conversation started"/>
@@ -93,8 +103,13 @@ const ConversationPage =() =>{
             )}
            <div className="flex flex-col-reverse gap-y-4">
             {messages.map((message)=>(
-                <div key={message.content}>
-                    {message.content}
+                <div key={message.content}
+                className={cn("p-8 w-full flex items-start gap-x-8 rounded-lg",message.role==="user"?"bg-white border border-black/10":"bg-muted")}>
+                    {message.role==="user"?<UserAvatar/>:<BotAvatar/>}
+                    <p className="text-sm"> {message.content}
+                    </p>
+                   
+
                     </div>
             ))}
             </div>
