@@ -55,12 +55,12 @@ const ImagePage = () => {
       const url = 'https://chatgpt-42.p.rapidapi.com/texttoimage';
 
       const headers: Record<string, string> = {
-        
+        'x-rapidapi-key': '5d8e013c32msh27cdc8c4b6d3df4p1752a2jsn186e345a2334',
         'x-rapidapi-host': 'chatgpt-42.p.rapidapi.com',
         "Content-Type": "application/json",
       };
 
-      
+      const apiKey ='5d8e013c32msh27cdc8c4b6d3df4p1752a2jsn186e345a2334';
       if (apiKey) {
         headers["x-rapidapi-key"] = apiKey;
       } else {
