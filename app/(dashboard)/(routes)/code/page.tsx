@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import axios from "axios";
 import { Empty } from "@/components/Empty";
 import { Loader } from "@/components/Loader";
 import { cn } from "@/lib/utils";
@@ -20,38 +19,70 @@ import ReactMarkdown from 'react-markdown';
 
 
 type ChatCompletionRequestMessage={content:string,role:string}
+
+
+type result = {
+    text: string;
+    finish_reason: "stop";
+    model: "gpt-3.5-turbo-030";
+    server: "backup-K";
+  };
+
 const Code =() =>{
     const router = useRouter();
-    const [messages, setMessages]=useState<ChatCompletionRequestMessage[]>([]);
-
-    const form=useForm<z.infer<typeof formSchema>>({
-       resolver:zodResolver(formSchema),
-       
-        defaultValues:{
-            prompt:""
-        }
+    const [messages, setMessages] = useState<ChatCompletionRequestMessage[]>([]);
+    const [error, setError] = useState<string | null>(null);
+    const form = useForm<z.infer<typeof formSchema>>({
+      resolver: zodResolver(formSchema),
+      defaultValues: {
+        prompt: "",
+      },
     });
-
-    const isloading=form.formState.isSubmitting;
-    const onSubmit=async(values:z.infer<typeof formSchema>) =>{
-       
-        try{
-            const userMessage:ChatCompletionRequestMessage={
-                role :"user",
-                content:values.prompt,
-            }as any;
-            const newMessage =[...messages,userMessage];
-            const response = await axios.post("api/code",{messages:newMessage,});
-            setMessages((current) => [...current,userMessage,response.data]);
-
+    const isLoading = form.formState.isSubmitting;
+  
+    const onSubmit = async (values: z.infer<typeof formSchema>) => {
+      try {
+        setError(null); // Reset error state
+        const userMessage: ChatCompletionRequestMessage = {
+          role: "user",
+          content: values.prompt,
+        };
+        const newMessages = [...messages, userMessage];
+        const url = "https://chatgpt-api8.p.rapidapi.com/";
+  
+        const headers: Record<string, string> = {
+          "x-rapidapi-host": "chatgpt-api8.p.rapidapi.com",
+          "Content-Type": "application/json",
+        };
+  
+        const apiKey = process.env.NEXT_PUBLIC_API_KEY;
+        if (apiKey) {
+          headers["x-rapidapi-key"] = apiKey;
+        } else {
+          throw new Error("API key is missing");
         }
-        catch(error:any){
-            console.log(error);
-        }
-        finally{
-                router.refresh();
-        }
+  
+        const options = {
+          method: "POST",
+          headers,
+          body: JSON.stringify(newMessages),
+        };
+  
+        const response = await fetch(url, options);
+        const result = (await response.json()) as result;
+        const botMessage: ChatCompletionRequestMessage = {
+          role: "system",
+          content: result.text,
+        };
+        setMessages((current) => [...current, userMessage, botMessage]);
+      } catch (error: any) {
+        console.error(error);
+        setError("Failed to fetch the response. Please try again.");
+      } finally {
+        router.refresh();
+      }
     };
+  
     return(
         <div className="px-4 lg:px-8">
         <div>
@@ -79,26 +110,26 @@ const Code =() =>{
                                             className="border-0 outline-0
                                             focus-visible:ring-0
                                             focus-visible:ring-transparent"
-                                            disabled={isloading}
+                                            disabled={isLoading}
                                             placeholder="Simple Toggle button in react"
                                             {...field}/>
                                         </FormControl>
                             </FormItem>
                         )}/>
-                        <Button className="col-span-12 lg:col-span-2 w-full" disabled={isloading}>
+                        <Button className="col-span-12 lg:col-span-2 w-full" disabled={isLoading}>
                             Generate
                         </Button>
                 </form>
             </Form>
         </div>
         <div className="space-y-4 mt-4">
-            {isloading && (
+            {isLoading && (
                 <div className="p-8 rounded-lg w-full items-center justify-center bg-muted">
                     <Loader/>
                     </div>
 
             )}
-            {messages.length===0 && !isloading && (
+            {messages.length===0 && !isLoading && (
                 <div>
                     <Empty label="No conversation started"/>
                     </div>
