@@ -36,11 +36,7 @@ const MusicPage = () => {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       setError(null); // Reset error state
-      const userMessage: ChatCompletionRequestMessage = {
-        role: "user",
-        content: values.prompt,
-      };
-      const newMessages = [...messages, userMessage];
+      setMusic(undefined);
       const url = "https://chatgpt-api8.p.rapidapi.com/";
 
       const headers: Record<string, string> = {
@@ -67,7 +63,7 @@ const MusicPage = () => {
         role: "system",
         content: result.text,
       };
-      setMessages((current) => [...current, userMessage, botMessage]);
+     
     } catch (error: any) {
       console.error(error);
       setError("Failed to fetch the response. Please try again.");

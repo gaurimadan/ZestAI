@@ -11,15 +11,16 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Empty } from "@/components/Empty";
 import { Loader } from "@/components/Loader";
-import { cn } from "@/lib/utils";
-import { UserAvatar } from "@/components/user-avatar";
-import { BotAvatar } from "@/components/bot-avatar";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Card, CardFooter } from "@/components/ui/card";
 import Image from "next/image";
 import { Download } from "lucide-react";
 
+type response={
+  generated_image:string;
 
+
+}
 type ChatCompletionRequestMessage = { content: string; role: string };
 type result = {
   text: string;
@@ -31,7 +32,8 @@ type result = {
 const ImagePage = () => {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
-  const[images,setImages] =useState<string[]>([]);
+
+  const[ans,SetAnswer]=useState("")
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -44,23 +46,20 @@ const ImagePage = () => {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      setImages([]);
+     
       setError(null); // Reset error state
-      const userMessage: ChatCompletionRequestMessage = {
-        role: "user",
-        content: values.prompt,
-      };
-      const newMessages = [...images, userMessage];
+     
+      // const newMessages = [...images, userMessage];
       
       const url = 'https://chatgpt-42.p.rapidapi.com/texttoimage';
 
       const headers: Record<string, string> = {
-        'x-rapidapi-key': '5d8e013c32msh27cdc8c4b6d3df4p1752a2jsn186e345a2334',
+       
         'x-rapidapi-host': 'chatgpt-42.p.rapidapi.com',
         "Content-Type": "application/json",
       };
 
-      const apiKey ='5d8e013c32msh27cdc8c4b6d3df4p1752a2jsn186e345a2334';
+      const apiKey =process.env.NEXT_PUBLIC_IMAGE_KEY
       if (apiKey) {
         headers["x-rapidapi-key"] = apiKey;
       } else {
@@ -70,17 +69,21 @@ const ImagePage = () => {
       const options = {
         method: "POST",
         headers,
-        body: JSON.stringify(newMessages),
+        body:JSON.stringify( {
+          text:values.prompt,
+          width:256,
+          height:256
+        })
       };
 
       const response = await fetch(url, options);
-      const urls = response.data.map((image:{url:string}) =>image.url);
-      setImages(urls);
-      const result = (await response.json()) as result;
-      const botMessage: ChatCompletionRequestMessage = {
-        role: "system",
-        content: result.text,
-      };
+      // @ts-ignore
+      
+      
+      const result = (await response.json()) as response;
+      console.log(result.generated_image)
+      SetAnswer(result.generated_image)
+     
       // setImages((current) => [...current,userMessage,botMessage]);
     } catch (error: any) {
       console.error(error);
@@ -187,27 +190,27 @@ const ImagePage = () => {
           </div>
         )}
         {error && <div className="text-red-500">{error}</div>}
-        {images.length === 0 && !isLoading && (
+        {ans.length === 0 && !isLoading && (
           <div>
             <Empty label="No images generated" />
           </div>
         )}
        
        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-col-3 xl:grid-cols-4 gap-4 mt-8">
-        {images.map((src)=>(
+        
           <Card
-          key={src}
+          
           className="rounded-lg overflow-hidden">
             <div className="relative aspect-square">
               <Image
               alt="Image"
               fill
-              src={src}
+              src={ans}
               />
             </div>
             <CardFooter className="p-2">
               <Button 
-              onClick={()=>window.open(src)}
+              onClick={()=>window.open(ans)}
               variant="secondary" className="w-full">
                 <Download className="h-4 w-4 mr-2"/>
                 Download
@@ -215,7 +218,7 @@ const ImagePage = () => {
 
             </CardFooter>
           </Card>
-        ))}
+        
        </div>
       </div>
     </div>
