@@ -11,20 +11,14 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Empty } from "@/components/Empty";
 import { Loader } from "@/components/Loader";
+import axios from "axios"
 
-type ChatCompletionRequestMessage = { content: string; role: string };
 
-type result = {
-  text: string;
-  finish_reason: "stop";
-  model: "gpt-3.5-turbo-030";
-  server: "backup-K";
-};
 
 const MusicPage = () => {
   const router = useRouter();
   const [music, setMusic] = useState<string>();
-  const [error, setError] = useState<string | null>(null);
+  // const [error, setError] = useState<string | null>(null);
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -35,38 +29,18 @@ const MusicPage = () => {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      setError(null); // Reset error state
+      
       setMusic(undefined);
-      const url = "https://chatgpt-api8.p.rapidapi.com/";
+     const response = await axios.post("/api/music",values)
 
-      const headers: Record<string, string> = {
-        "x-rapidapi-host": "chatgpt-api8.p.rapidapi.com",
-        "Content-Type": "application/json",
-      };
+     setMusic(response.data.audio);
+     
 
-      const apiKey = process.env.NEXT_PUBLIC_API_KEY;
-      if (apiKey) {
-        headers["x-rapidapi-key"] = apiKey;
-      } else {
-        throw new Error("API key is missing");
-      }
-
-      const options = {
-        method: "POST",
-        headers,
-        body: JSON.stringify(newMessages),
-      };
-
-      const response = await fetch(url, options);
-      const result = (await response.json()) as result;
-      const botMessage: ChatCompletionRequestMessage = {
-        role: "system",
-        content: result.text,
-      };
+     form.reset();
      
     } catch (error: any) {
       console.error(error);
-      setError("Failed to fetch the response. Please try again.");
+     
     } finally {
       router.refresh();
     }
@@ -110,16 +84,19 @@ const MusicPage = () => {
             <Loader />
           </div>
         )}
-        {error && <div className="text-red-500">{error}</div>}
-        {messages.length === 0 && !isLoading && (
+       
+        {!music && !isLoading && (
           <div>
             <Empty label="No music generated yet" />
           </div>
         )}
        
-       <div>
-        Music
-       </div>
+       {music && (
+        <audio controls className="w-full mt-8">
+          <source src={music}/>
+
+        </audio>
+       )}
       </div>
     </div>
   );
