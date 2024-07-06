@@ -86,18 +86,19 @@ const VideoPage = () => {
         )}
        
         {!video && !isLoading && (
-          <div>
+          
             <Empty label="No Video generated yet" />
-          </div>
+          
         )}
        
-       {video && (
-       <video className="w-full aspect-video mt-8 rounded-lg border bg-black" controls >
+      {video && (
+        <video className="w-full aspect-video mt-8 rounded-lg border bg-black" controls>
           <source src={video}/>
-       </video>>
-       )}
+        </video>
+      )}
       </div>
     </div>
+    
   );
 };
 
