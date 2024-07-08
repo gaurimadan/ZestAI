@@ -14,6 +14,8 @@ import { Loader } from "@/components/Loader";
 import { cn } from "@/lib/utils";
 import { UserAvatar } from "@/components/user-avatar";
 import { BotAvatar } from "@/components/bot-avatar";
+import { increaseApiLimit,checkApiLimit } from "@/lib/api-limit";
+import { NextResponse } from "next/server";
 
 type ChatCompletionRequestMessage = { content: string; role: string };
 
@@ -28,6 +30,7 @@ const ConversationPage = () => {
   const router = useRouter();
   const [messages, setMessages] = useState<ChatCompletionRequestMessage[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [count,setCount]=useState(0)
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -38,6 +41,12 @@ const ConversationPage = () => {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
+      const freeTrial=await checkApiLimit();
+      if(!freeTrial){
+        console.log("over");
+        
+
+      }
       setError(null); // Reset error state
       const userMessage: ChatCompletionRequestMessage = {
         role: "user",
@@ -63,14 +72,23 @@ const ConversationPage = () => {
         headers,
         body: JSON.stringify(newMessages),
       };
-
+     
       const response = await fetch(url, options);
       const result = (await response.json()) as result;
+
+      
+
       const botMessage: ChatCompletionRequestMessage = {
         role: "system",
         content: result.text,
       };
+    
+      // if(!freeTrial){
+      //   return new NextResponse("Free Trial has expired.",{status:403})
+      // }
       setMessages((current) => [...current, userMessage, botMessage]);
+      setCount(count+1)
+      await increaseApiLimit();
     } catch (error: any) {
       console.error(error);
       setError("Failed to fetch the response. Please try again.");
