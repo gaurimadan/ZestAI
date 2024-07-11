@@ -1,11 +1,9 @@
-import { useAuth } from "@clerk/nextjs";
+import {useAuth} from "@clerk/nextjs";
 import prismadb from "./prismadb";
-import { MAX_FREE_COUNTS } from "@/constants";
-import type { NextApiRequest,NextApiResponse } from "next";
- 
+import { MAX_FREE_COUNTS } from "@/constants"
 
-export const increaseApiLimit= async (req:NextApiRequest,res:NextApiResponse) =>{
-    const {userId} = useAuth()
+export const increaseApiLimit= async () =>{
+    const {userId} = useAuth();
     if(!userId){
         return;
     }
@@ -29,7 +27,7 @@ export const increaseApiLimit= async (req:NextApiRequest,res:NextApiResponse) =>
 
  };
 
- export const checkApiLimit = async (req:NextApiRequest,res:NextApiResponse)=>{
+ export const checkApiLimit = async ()=>{
     const {userId} = useAuth();
     if(!userId){
         return false

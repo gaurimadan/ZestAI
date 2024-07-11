@@ -41,12 +41,6 @@ const ConversationPage = () => {
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
-      const freeTrial=await checkApiLimit();
-      if(!freeTrial){
-        console.log("over");
-        
-
-      }
       setError(null); // Reset error state
       const userMessage: ChatCompletionRequestMessage = {
         role: "user",
@@ -83,12 +77,16 @@ const ConversationPage = () => {
         content: result.text,
       };
     
-      // if(!freeTrial){
-      //   return new NextResponse("Free Trial has expired.",{status:403})
-      // }
       setMessages((current) => [...current, userMessage, botMessage]);
-      setCount(count+1)
-      await increaseApiLimit();
+      await fetch("/api/conversation", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ messages: [...newMessages, botMessage] }),
+      });
+
+     
     } catch (error: any) {
       console.error(error);
       setError("Failed to fetch the response. Please try again.");
