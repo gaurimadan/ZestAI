@@ -78,7 +78,7 @@ const ConversationPage = () => {
       };
     
       setMessages((current) => [...current, userMessage, botMessage]);
-      await fetch("/api/conversation", {
+      await fetch("/api/newconversation", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
