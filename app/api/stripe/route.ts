@@ -25,6 +25,33 @@ export async function GET(){
             });
             return new NextResponse(JSON.stringify({url:stripeSession.url}));
         }
+        const stripeSession = await stripe.checkout.sessions.create({
+            success_url:settingUrl,
+            cancel_url:settingUrl,
+            payment_method_types:["card"],
+            billing_address_collection:"auto",
+            customer_email:user.emailAddresses[0].emailAddress,
+            line_items:[
+                {
+                    price_data:{
+                        currency:"USD",
+                        product_data:{
+                            name:"ZestAI",
+                            description:"Unlimited AI Generations",
+                        },
+                        unit_amount:200,
+                        recurring:{
+                            interval:"month"
+                        }
+                    },
+                    quantity:1,
+                }
+            ],
+            metadata:{
+                userId,
+            }
+        })
+        return new NextResponse(JSON.stringify({url:stripeSession.url}));
     }
     catch(error){
         console.log("[STRIPE_ERROR]",error)
