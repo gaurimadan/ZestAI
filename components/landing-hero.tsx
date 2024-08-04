@@ -35,6 +35,7 @@ export const LandingHero =()=>{
                 Start Generating for free
             </Button>
         </Link>
+        
            </div>
     )
 }

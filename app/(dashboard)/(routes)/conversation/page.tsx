@@ -14,8 +14,7 @@ import { Loader } from "@/components/Loader";
 import { cn } from "@/lib/utils";
 import { UserAvatar } from "@/components/user-avatar";
 import { BotAvatar } from "@/components/bot-avatar";
-import { increaseApiLimit,checkApiLimit } from "@/lib/api-limit";
-import { NextResponse } from "next/server";
+import Modal from "@/components/Modal";
 
 type ChatCompletionRequestMessage = { content: string; role: string };
 
@@ -26,11 +25,16 @@ type result = {
   server: "backup-K";
 };
 
+const MAX_FREE_USES = 1;
+
 const ConversationPage = () => {
   const router = useRouter();
   const [messages, setMessages] = useState<ChatCompletionRequestMessage[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [count,setCount]=useState(0)
+  const [count, setCount] = useState(0);
+  const [showModal, setShowModal] = useState(false);
+  const [isDisabled, setIsDisabled] = useState(false);
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -40,6 +44,12 @@ const ConversationPage = () => {
   const isLoading = form.formState.isSubmitting;
 
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
+    if (count >= MAX_FREE_USES) {
+      setShowModal(true);
+      setIsDisabled(true);
+      return;
+    }
+
     try {
       setError(null); // Reset error state
       const userMessage: ChatCompletionRequestMessage = {
@@ -66,27 +76,19 @@ const ConversationPage = () => {
         headers,
         body: JSON.stringify(newMessages),
       };
-     
+
       const response = await fetch(url, options);
       const result = (await response.json()) as result;
-
-      
 
       const botMessage: ChatCompletionRequestMessage = {
         role: "system",
         content: result.text,
       };
-    
-      setMessages((current) => [...current, userMessage, botMessage]);
-      await fetch("/api/newconversation", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ messages: [...newMessages, botMessage] }),
-      });
 
-     
+      setMessages((current) => [...current, userMessage, botMessage]);
+      setCount((currentCount) => currentCount + 1);
+      form.reset();
+      // await fetch("/api/increaseApiLimit", { method: "POST" });
     } catch (error: any) {
       console.error(error);
       setError("Failed to fetch the response. Please try again.");
@@ -110,7 +112,7 @@ const ConversationPage = () => {
                   <FormControl className="m-0 p-0">
                     <Input
                       className="border-0 outline-0 focus-visible:ring-0 focus-visible:ring-transparent"
-                      disabled={isLoading}
+                      disabled={isLoading || isDisabled}
                       placeholder="What is Artificial Intelligence?"
                       {...field}
                     />
@@ -120,7 +122,7 @@ const ConversationPage = () => {
             />
             <Button
               className="col-span-12 lg:col-span-2 w-full"
-              disabled={isLoading}
+              disabled={isLoading || isDisabled}
             >
               Generate
             </Button>
@@ -156,6 +158,19 @@ const ConversationPage = () => {
           ))}
         </div>
       </div>
+      {showModal && (
+        <Modal onClose={() => setShowModal(false)}>
+          <div className="p-4">
+            <h2 className="text-xl font-bold mb-4">Upgrade to Continue</h2>
+            <p>
+              You have reached the maximum number of free uses. Please upgrade
+              to a paid plan to continue using this service.
+            </p>
+            <Button onClick={() => setShowModal(false)}>Close</Button>
+            {/* Add a link to the upgrade page */}
+          </div>
+        </Modal>
+      )}
     </div>
   );
 };
