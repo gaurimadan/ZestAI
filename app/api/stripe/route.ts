@@ -20,7 +20,7 @@ export async function GET(){
         });
         if(userSubscription && userSubscription.stripeCustomerId){
             const stripeSession = await stripe.billingPortal.sessions.create({
-                customer:userSubscription.stripeSubscriptionId,
+                customer:userSubscription.stripeSubscriptionId as string,
                 return_url:settingUrl,
             });
             return new NextResponse(JSON.stringify({url:stripeSession.url}));
