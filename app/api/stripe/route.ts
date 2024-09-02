@@ -1,60 +1,51 @@
-import { auth,currentUser } from "@clerk/nextjs/server";
-import { NextResponse } from "next/server";
-import prismadb from "@/lib/prismadb";
-import { stripe } from "@/lib/stripe";
-import { absoluteUrl } from "@/lib/utils";
+import { NextResponse } from 'next/server';
+import Stripe from 'stripe';
 
-const settingUrl=absoluteUrl("/settings");
+// Force dynamic rendering for this route
+export const dynamic = 'force-dynamic';
 
-export async function GET(){
-    try{
-        const {userId}=auth();
-        const user=await currentUser();
-        if(!userId || !user){
-            return new NextResponse("Unauthorized",{status:401});
-        }
-        const userSubscription= await prismadb.userSubscription.findUnique({
-           where:{
-            userId
-           } 
-        });
-        if(userSubscription && userSubscription.stripeCustomerId){
-            const stripeSession = await stripe.billingPortal.sessions.create({
-                customer:userSubscription.stripeSubscriptionId as string,
-                return_url:settingUrl,
-            });
-            return new NextResponse(JSON.stringify({url:stripeSession.url}));
-        }
-        const stripeSession = await stripe.checkout.sessions.create({
-            success_url:settingUrl,
-            cancel_url:settingUrl,
-            payment_method_types:["card"],
-            billing_address_collection:"auto",
-            customer_email:user.emailAddresses[0].emailAddress,
-            line_items:[
-                {
-                    price_data:{
-                        currency:"USD",
-                        product_data:{
-                            name:"ZestAI",
-                            description:"Unlimited AI Generations",
-                        },
-                        unit_amount:200,
-                        recurring:{
-                            interval:"month"
-                        }
-                    },
-                    quantity:1,
-                }
-            ],
-            metadata:{
-                userId,
-            }
-        })
-        return new NextResponse(JSON.stringify({url:stripeSession.url}));
+// Initialize Stripe
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
+  apiVersion: '2024-06-20', // Use the latest API version
+});
+
+export async function GET(request: Request) {
+  try {
+    // Extract userId from the request, you might need to adjust this based on your auth setup
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('userId');
+
+    if (!userId) {
+      return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
-    catch(error){
-        console.log("[STRIPE_ERROR]",error)
-        return new NextResponse("Internal error",{status:500});
-    }
+
+    // Create a Stripe checkout session
+    const stripeSession = await stripe.checkout.sessions.create({
+      line_items: [{
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: 'Subscription',
+          },
+          recurring: {
+            interval: 'month'
+          },
+          unit_amount: 1000, // $10.00 in cents
+        },
+        quantity: 1,
+      }],
+      mode: 'subscription',
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/cancel`,
+      metadata: {
+        userId,
+      },
+    });
+
+    // Return the URL for the checkout session
+    return NextResponse.json({ url: stripeSession.url });
+  } catch (error) {
+    console.error('[STRIPE_ERROR]', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
+  }
 }
