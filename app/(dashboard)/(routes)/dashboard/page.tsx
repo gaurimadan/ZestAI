@@ -14,13 +14,7 @@ const tools =[
     bgcolor:"bg-violet/500/10"
 
   },
-  {label: "Music Generation",
-    icon:Music,
-    color:"text-green-500",
-    href:"/music",
-    bgcolor:"bg-green/500/10"
-
-  },
+  
   
   {label: "Code Generation",
     icon:Code,
